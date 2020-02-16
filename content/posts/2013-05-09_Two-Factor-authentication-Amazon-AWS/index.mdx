@@ -1,0 +1,56 @@
+---
+title: Two-Factor authentication — Amazon AWS
+author: Heitor Lessa
+description: ''
+date: '2013-05-09T22:25:26.000Z'
+categories: []
+keywords: []
+slug: two-factor-authentication-amazon-aws-18ed0693d613
+hero: img/1__CS5s1YpStzNILgjLK35Cnw.png
+---
+
+Doing some experiments with **Google Authenticator** I also found that can be used with **Amazon AWS**, which can bring **an additional security** to all employees that need access to your Cloud.
+
+So, as Amazon offers a wide range of services, most of us sometimes pass by unnoticed that there is **Amazon IAM** (AWS Identity and Access Management) feature, which helps managing any sort of access into the cloud.
+
+From here, we assume that you already have your Amazon account, your users and services already created. Then, all you need to do is to open your **AWS Console**:
+
+![**AWS Two-factor authentication** — AWS Console](img/1__CS5s1YpStzNILgjLK35Cnw.png)
+
+As outlined in the image above, select IAM feature and you should get the IAM Dashboard:
+
+![**AWS Two-factor authentication** — IAM dashboard[caption]](img/1__FKnIc9L1HyLbBAy__BflNog.png)
+
+Rather than insert the whole IAM Dashboard screenshot, you should pay attention in that specific part that can be found at the bottom of the page. At this stage, you should copy that link that will be used to sign in when you have **Google authenticator** activated.
+
+Go to **Users** and select your one (heitor in this case here), and then select the tab **“Security Credentials”** as follows:
+
+![**AWS Two-factor authentication** — Security credentials](img/1__WGTrUssQOJtP8p5PywDx9g.png)
+
+Note that Multi-Factor Authentication Device (MFA) is not enabled by default, so click in **“Manage MFA device”:**
+
+![**AWS Two-factor authentication** — Multi-Factor authentication device (MFA)](img/1__6__wf1oOweegatQAVh4mt2Q.png)
+
+Keep the first option selected and click in Continue, and then Continue again:
+
+![**AWS Two-factor authentication** — Enabling Multi-Factor Authentication device (MFA)AWS Two-factor authentication - Enabling Multi-Factor Authentication device (MFA)](https://cdn-images-1.medium.com/max/800/0*PTusrfPfz8m4ZCZb.png)
+
+From now, all you need to do is open up your Google Authentication Mobile App and scan the QR Code, then you will be able to generate code as a virtual token, and then input the first code and wait until you get the second code to also include in the form. Once completed, click in **Activate Virtual MFA.**
+
+If everything went well that popup window will be automatically closed and you must see the information below:
+
+![**WS Two-factor authentication** — Multi-Factor Authentication device enabled (MFA)](img/1__oloMnzenU5XKLHH8qHWPvg.png)
+
+#### Results
+
+Let’s go to our tests. Access the URL you got at the beginning which now should look like this:
+
+![**AWS Two-factor authentication** — AWS Console 2](img/1__s52Llv5KgnOAB____WlERsyA.png)
+
+Once you type your password, you must be redirected to a second page prompting for your Google Authenticator code:
+
+![**AWS Two-factor authentication** — Google authenticator code](img/1__OxwO9xj8252ZHdRJXxjF0g.png)
+
+And That’s It ! Easy breeze :)
+
+Leave a comment if you have any feedback, doubts or suggestions!

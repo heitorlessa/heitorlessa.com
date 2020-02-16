@@ -1,0 +1,75 @@
+---
+title: Connecting your Linux to a Cisco AnyConnect (SSL) — part 3
+author: Heitor Lessa
+description: ''
+date: '2013-04-23T10:32:22.000Z'
+categories: []
+keywords: []
+slug: connecting-your-linux-to-a-cisco-anyconnect-ssl-part-3-c73a4fed9672
+hero: img/hero.png
+---
+
+Hi there !
+
+This is the final part of using openconnect — You can check the older ones below:
+
+* [**Connecting your Linux to a Cisco AnyConnect (SSL) - Part 1**](http://www.heitorlessa.com/connecting-your-linux-to-a-cisco-anyconnect-ssl-part-1/)
+* [**Connecting your Linux to a Cisco AnyConnect (SSL) - Part 2**](http://www.heitorlessa.com/connecting-your-linux-to-a-cisco-anyconnect-ssl-part-2/)
+
+As mentioned previously, we will be covering here **how to create a script to monitor such VPN using ICMP, and restart that VPN if it is down**
+
+I would say, this is very straightforward and does not require much knowledge, so we are going to follow the same procedure as part 2 — Show the script in parts and then a link to the full script will be published at the end.
+
+```bash
+# PATH needs to be set as this script will run as a cron job and to protect against basic attacks
+PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin"
+
+# Global variables
+TEST_HOST="yourHost.Here"
+STATUS_IF=$(ip addr show | grep "sslinterface" | awk -F: '{print $2}')
+COUNT=3
+```
+
+As always, we need to define our global variables that will be used along the script. The new thing here is `STATUS_IF` that uses "pipes" to concatenate the previous standard output to a second command, and then a third one.
+
+Basically the `STATUS_IF` will store the whatever interface name you defined previously - can be `tun0`, `sslinterface`, `sslvpn`, etc.
+
+```bash
+function check_interface(){
+  test -z "$STATUS_IF" && start_openconnect
+}
+
+function start_openconnect(){
+  /etc/init.d/openconnect start
+}
+```
+
+The first function `check_interface` will check if our `STATUS_IF` created initially contains anything, otherwise means that there is no VPN interface running, then you can call other function that will start our vpn again ;)
+
+The second one simply calls openconnect init script to start the VPN.
+
+```bash
+function check_vpn(){
+  if [ $STATUS_IF == "sslinterface" ]
+    then
+        count=$(ping -c ${COUNT} ${TEST_HOST} | grep 'received' | awk -F',' '{ print $2 }' | awk '{ print $1 }')
+        test $count = 0 && /etc/init.d/openconnect restart
+  fi
+}
+```
+
+As our last one, we confirm if the value stored in `STATUS_IF` variable is equals to `sslinterface`, then creates a variable `count` which will store the number of packets received from a `PING` to `TEST_HOST`. This variable uses the same idea of `STATUS_IF`, which we use `VARIABLE=$(command here)` that stores the output of a command in such variable.
+
+So, if the number of packets received is equals to 0 we can assume that our VPN is not working properly OR such `TEST_HOST` is unreachable, then as a result we simply restart the VPN.
+
+However, if the HOST is no longer available in the network, you should define another one (e.g your own gateway) that is able to respond to ICMP packets.
+
+* Full script: [monitorVPN_sample - Full script](https://www.dropbox.com/s/yr6i2docd0hk33r/monitorVPN_sample.zip?dl=0)
+
+Well, that's all folks!
+
+We finish here the last part of Connecting your Linux to a Cisco AnyConnect VPN !
+
+The next article will be about **SSH Two-Factor authentication**, so it will requires more technical skills than this one to understand some of the tricks to make it work ;)
+
+See you then!

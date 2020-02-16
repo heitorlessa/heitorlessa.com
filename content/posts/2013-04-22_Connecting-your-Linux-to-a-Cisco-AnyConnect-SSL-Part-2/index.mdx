@@ -1,0 +1,134 @@
+---
+title: Connecting your Linux to a Cisco AnyConnect (SSL) — Part 2
+author: Heitor Lessa
+description: ''
+date: '2013-04-22T21:47:18.000Z'
+categories: []
+keywords: []
+slug: connecting-your-linux-to-a-cisco-anyconnect-ssl-part-2-5dc202278715
+hero: img/hero.png
+---
+
+Hey you!
+
+As mentioned in the [part 1](http://www.heitorlessa.com/connecting-your-linux-to-a-cisco-anyconnect-ssl-part-1/) of this series, I will be covering **how to create a openconnect init script**.
+
+As regards to the init script, I will be posting parts of the script first, and a link for download at the end.
+
+Firstly, we need the [shebang](http://en.wikipedia.org/wiki/Shebang_%28Unix%29) `#!/bin/bash`, and then global variables that will be used along with the script:
+
+```bash
+# Path variables  
+PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+# VPN Variables  
+IFACE="sslvpn"  
+VPN_USER="vpn_user"  
+VPN_HOST="sslvpn.yourdomain.com"  
+VPN_PASS="vpn_password"  
+PID="/var/run/openconnect.pid"  
+TEMP_LOG="/tmp/status.txt"  
+INFO="Usage: $(basename "$0") (start|stop|status|restart)"  
+```
+
+You can also define most of these options in a config file - See [openconnect manual](http://www.infradead.org/openconnect/manual.html) for more details.
+
+As our first function, we will be creating one to connect to the VPN that will use most of the variables defined previously:
+
+```bash
+function connect_vpn(){  
+if [ -f $PID ]  
+	then  
+		printf "Openconnect is already running"  
+		exit 1  
+	else  
+		echo ${VPN_PASS} | openconnect -b --interface=${IFACE} --user=${VPN_USER} --no-dtls ${VPN_HOST} --passwd-on-stdin > $TEMP_LOG 2>&1  
+		if $(grep -i failed $TEMP_LOG)  
+			then  
+				printf "Openconnect failed to start!"  
+				cat $TEMP_LOG  
+				exit 2  
+			else  
+				touch $PID  
+				printf "Openconnect started!"  
+		fi  
+fi  
+}
+```
+
+At the first line (2) of our function, we test if the file `/var/run/openconnect.pid` exists before try starting it. Otherwise, we start and send all information (thrown in the standard output) to "/tmp/status.txt". I had to create this as if something goes wrong with Cisco authentication Openconnect gives an error, which our script should be able to handle and display. So, if everything goes OK and VPN connects we creates a PID file.
+
+As our second function, we need to check if our program is already running or not based on PID file - We can also check that using pgrep or other tools, but we will not here.
+
+```bash
+function check_openconnect(){  
+if [ -f $PID ]  
+	then  
+		printf "Openconnect is running!"  
+	else  
+		printf "Openconnect is stopped"  
+fi  
+}
+```
+
+> NOTE: Pretty much the same as before, check if PID file exists and then print a message. 
+
+We will need another function to kill our program in case we want to stop it later on - There it is our last function:
+
+```bash
+function kill_openconnect(){  
+if [ -f $PID ]  
+	then  
+		rm -f $PID >/dev/null 2>&1  
+		kill -9 $(pgrep openconnect) >/dev/null 2>&1  
+	else  
+		printf "Openconnect is not running!"  
+fi
+```
+
+The only new thing here is a simpler way to kill a process in Linux using kill + PID of the process running obtained with pgrep command.
+
+With that in mind, we are now able to create a switch case in shell script that add those magic options (start|stop|status|restart):
+
+```bash
+
+```
+case "$1" in  
+	start)  
+		connect_vpn  
+		;;  
+	stop)  
+		kill_openconnect  
+		;;  
+	status)  
+		check_openconnect  
+		;;  
+	restart)  
+		$0 stop  
+		$0 start  
+		;;  
+	*)  
+		echo "$INFO"  
+		exit 0  
+		;;
+```
+
+As you can see, we have all basic options for a init script (start, stop, status and restart). However, you may ask - What the heck is `$0`, `$1`, etc.
+
+These are special variables in shell script, formally called positional parameters. Please, find the quick explanation for what we used here:
+
+* $0 → Program name, so there is no need to use /etc/init.d/openconnect stop again — keep things simple!
+* $1 → First argument, which in this case can be start/stop/status/restart
+
+Now that you can now create your own init scripts, follow the link to the full program including comments, etc.
+
+* [openconnect_sample](https://www.dropbox.com/s/q499g5cckame0s5/openconnect_sample.zip?dl=0)
+
+In order to not have a really big post, I will be covering the monitor script in details in the final part of this article.
+
+Some references that you may find useful for learning shell script - Any doubts of this code or how to tune it, leave a comment :)
+
+* [http://www.howtogeek.com/67469/the-beginners-guide-to-shell-scripting-the-basics/](http://www.howtogeek.com/67469/the-beginners-guide-to-shell-scripting-the-basics/)
+* [http://www.tutorialspoint.com/unix/unix-special-variables.htm](http://www.tutorialspoint.com/unix/unix-special-variables.htm)
+
+PS: Remember to create a limited service account for that VPN once credentials will be exposed to this script, also remember to give only permission to root and deny any other access. Refer to [SHC](http://www.thegeekstuff.com/2012/05/encrypt-bash-shell-script/) to encode your shell script to protect against normal users (but not advanced users that can hack it)
